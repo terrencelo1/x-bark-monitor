@@ -85,6 +85,8 @@ async def main():
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {os.environ['WORKER_TOKEN']}",
+            # workers.dev edge returns 1010 for the default Python-urllib UA
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
         },
         method="POST",
     )
