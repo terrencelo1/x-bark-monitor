@@ -474,7 +474,7 @@ async function pushOne(env, tweet) {
     return { skipped: "translate failed", id: tweet.id };
   }
   if (!tr.zh || tr.zh === text) return { skipped: "no translation", id: tweet.id };
-  const body = `${stripDividerLines(tr.zh)} - ${label}`;
+  const body = stripDividerLines(tr.zh);
   const bk = await sendBark(env, label, body, label, tweet.url || "");
   return { ok: bk.ok, id: tweet.id, via: tr.via, bark: bk, body };
 }
@@ -504,7 +504,7 @@ export default {
       if (!text) return new Response("usage: /test?text=hello&source=FirstSquawk", { status: 400 });
       try {
         const tr = await translateToZh(env, text);
-        const body = `${stripDividerLines(tr.zh)} - ${sourceLabel(source)}`;
+        const body = stripDividerLines(tr.zh);
         if (url.pathname === "/test") {
           return new Response(JSON.stringify({ ok: true, zh: body, via: tr.via }), {
             status: 200, headers: { "Content-Type": "application/json" },
