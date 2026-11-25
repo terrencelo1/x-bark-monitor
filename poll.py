@@ -42,10 +42,22 @@ MAX_AGE_HOURS = 3
 def is_stale(created_at):
     if not created_at:
         return False
-    try:
-        dt = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
-    except ValueError:
-        return False
+    dt = None
+    s = str(created_at).strip()
+    # twifork's tweet.created_at is X's legacy string, e.g.
+    # "Sun Nov 23 15:13:00 +0000 2026" — fromisoformat CANNOT parse it
+    # (that is why the first version of this guard never fired).
+    for fmt in ("%a %b %d %H:%M:%S %z %Y",):
+        try:
+            dt = datetime.strptime(s, fmt)
+            break
+        except ValueError:
+            continue
+    if dt is None:
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        except ValueError:
+            return False
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     age = datetime.now(timezone.utc) - dt
