@@ -19,6 +19,7 @@ Cheddarflow 1004137473679679488 (joined 2018-06-05).
 import asyncio
 import json
 import os
+import re
 import urllib.request
 
 HANDLES = [
@@ -27,6 +28,35 @@ HANDLES = [
 ]
 
 MAX_PER_HANDLE = 10
+
+# Promo posts from Unusual Whales (sales / discount codes / sign-up pushes)
+# are not pushed (user 2026-11-26). Flow posts mention tickers, strikes and
+# premium dollar amounts, so the patterns below only match marketing
+# language — "premium" alone is NOT a promo signal (it is an options term).
+PROMO_PATTERNS = [
+    re.compile(p, re.IGNORECASE)
+    for p in [
+        r"\b\d+\s*%\s*off\b",          # 50% off
+        r"\bblack friday\b",
+        r"\bcyber monday\b",
+        r"\bpromo\b",
+        r"\buse code\b",
+        r"\bdiscount code\b",
+        r"\bdiscount\b",
+        r"\bsubscribe\b",
+        r"\bsign\s?up\b",
+        r"\bgiveaway\b",
+        r"\bfree trial\b",
+        r"\blimited time\b",
+        r"\bjoin (unusual whales|us)\b",
+        r"\bflash sale\b",
+        r"\bon sale\b",
+    ]
+]
+
+
+def is_promo(text):
+    return any(p.search(text or "") for p in PROMO_PATTERNS)
 
 
 async def resolve_user_id(client, handle):
@@ -74,6 +104,9 @@ async def main():
             print(f"fetch failed for {h['label']}: {e!r}")
             continue
         for it in items:
+            if h["screen_name"] == "unusual_whales" and is_promo(it.get("text", "")):
+                print(f"skipped promo {it['id']}: {it.get('text', '')[:80]!r}")
+                continue
             payload["tweets"].append({**it, "source": h["label"]})
 
     if not payload["tweets"]:
