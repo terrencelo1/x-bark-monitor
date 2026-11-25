@@ -28,12 +28,22 @@ export default {
           Authorization: `Bearer ${env.GH_PAT}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
+          // GitHub rejects API requests with no User-Agent (403).
+          // Workers fetch sends none by default — this is the likely
+          // cause of the 403, since the token itself is proven good
+          // (token_fp matches the known-good PAT, token_len 93).
+          "User-Agent": "x-bark-monitor-trigger",
         },
         body: JSON.stringify({ ref: "main" }),
       }
     );
     // 204 = dispatched. Anything else (401/403/404/422) means the PAT,
     // repo name, or workflow file is wrong — log it, do not retry blindly.
-    console.log("dispatch:", res.status, "token_len:", len, "token_fp:", fp);
+    if (res.status === 204) {
+      console.log("dispatch:", res.status, "token_len:", len, "token_fp:", fp);
+    } else {
+      const body = (await res.text()).slice(0, 200);
+      console.log("dispatch:", res.status, "token_len:", len, "token_fp:", fp, "body:", body);
+    }
   },
 };
