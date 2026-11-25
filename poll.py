@@ -21,6 +21,7 @@ import json
 import os
 import re
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 HANDLES = [
     {"label": "Unusual Whales", "screen_name": "unusual_whales", "fallback_id": "1200616796295847936"},
@@ -28,6 +29,27 @@ HANDLES = [
 ]
 
 MAX_PER_HANDLE = 10
+
+# Stale tweets must not be pushed (user 2026-11-26): a Nov 23 tweet was
+# pushed on Nov 26 ~7:00am SGT because the account resurfaced it (retweet
+# / new link post on the same story) and it re-entered the latest-10 fetch
+# with its original id — the dedup had never seen it, so it went out as
+# if it were breaking news. The poll runs every minute, so anything older
+# than this is a resurface, not fresh news. Fail open: if created_at is
+# missing or unparseable, keep the tweet (do not drop on a parse bug).
+MAX_AGE_HOURS = 3
+
+def is_stale(created_at):
+    if not created_at:
+        return False
+    try:
+        dt = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    age = datetime.now(timezone.utc) - dt
+    return age > timedelta(hours=MAX_AGE_HOURS)
 
 # Promo posts from either handle (sales / discount codes / sign-up pushes)
 # are not pushed (user 2026-11-26: Unusual Whales first, Cheddarflow added
@@ -105,6 +127,9 @@ async def main():
             print(f"fetch failed for {h['label']}: {e!r}")
             continue
         for it in items:
+            if is_stale(it.get("created_at", "")):
+                print(f"skipped stale {h['label']} {it['id']}: created_at={it.get('created_at', '')!r}")
+                continue
             if is_promo(it.get("text", "")):
                 print(f"skipped promo {h['label']} {it['id']}: {it.get('text', '')[:80]!r}")
                 continue
