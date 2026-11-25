@@ -462,6 +462,20 @@ function sourceLabel(source) {
   return String(source || "X");
 }
 
+// Tweet time as "5:16pm" in SGT (Asia/Singapore, 12-hour). Uses the tweet's
+// created_at; falls back to now when it is missing or unparseable.
+function sgtTime(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Singapore", hour: "numeric", minute: "2-digit", hour12: true,
+  }).formatToParts(d);
+  const h = parts.find((p) => p.type === "hour").value;
+  const m = parts.find((p) => p.type === "minute").value;
+  const ap = parts.find((p) => p.type === "dayPeriod").value.toLowerCase();
+  return `${h}:${m}${ap}`;
+}
+
 async function pushOne(env, tweet) {
   const label = sourceLabel(tweet.source);
   const text = extractTweetBody(tweet.text || "");
@@ -474,7 +488,8 @@ async function pushOne(env, tweet) {
     return { skipped: "translate failed", id: tweet.id };
   }
   if (!tr.zh || tr.zh === text) return { skipped: "no translation", id: tweet.id };
-  const body = stripDividerLines(tr.zh);
+  const t = sgtTime(tweet.created_at);
+  const body = t ? `${stripDividerLines(tr.zh)} (${t} SGT)` : stripDividerLines(tr.zh);
   const bk = await sendBark(env, label, body, label, tweet.url || "");
   return { ok: bk.ok, id: tweet.id, via: tr.via, bark: bk, body };
 }
@@ -504,7 +519,8 @@ export default {
       if (!text) return new Response("usage: /test?text=hello&source=FirstSquawk", { status: 400 });
       try {
         const tr = await translateToZh(env, text);
-        const body = stripDividerLines(tr.zh);
+        const t = sgtTime();
+        const body = t ? `${stripDividerLines(tr.zh)} (${t} SGT)` : stripDividerLines(tr.zh);
         if (url.pathname === "/test") {
           return new Response(JSON.stringify({ ok: true, zh: body, via: tr.via }), {
             status: 200, headers: { "Content-Type": "application/json" },
