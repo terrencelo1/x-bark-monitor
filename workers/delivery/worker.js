@@ -48,12 +48,15 @@ const GLOSSARY =
   "TRIM LOSSES=收窄跌幅, TRIMMED LOSSES=收窄跌幅, TRIM GAINS=收窄涨幅, " +
   "TRIMMED GAINS=收窄涨幅, PARE LOSSES=收窄跌幅, PARE GAINS=收窄涨幅, " +
   "NARROW LOSSES=收窄跌幅, EXTEND LOSSES=扩大跌幅, EXTEND GAINS=扩大涨幅, " +
-  "ANTHROPIC=Anthropic, OPENAI=OpenAI";
+  "ANTHROPIC=Anthropic, OPENAI=OpenAI, " +
+  "UNUSUAL WHALES=Unusual Whales, CHEDDARFLOW=Cheddarflow";
 
 // 兜底：prompt 里的术语表只是提示，8B 小模型仍可能无视（Anthropic
 // 就翻车过一次）。原文含 Anthropic 时，译文里出现的人类学／音译一律
 // 强制改回 Anthropic；这道是确定性的，不依赖模型听话。
 // 同理 OpenAI：若原文有 OpenAI，译文里的"开放人工智能"改回 OpenAI。
+// 2026-11-26 补充 Unusual Whales / Cheddarflow：用户报 Unusual Whales
+// 被翻成"异常大鲸鱼"。两个都是来源品牌名，一律保留英文不翻译。
 function fixUntranslatableNames(orig, zh) {
   let out = String(zh || "");
   if (/anthropic/i.test(orig || "")) {
@@ -61,6 +64,22 @@ function fixUntranslatableNames(orig, zh) {
   }
   if (/openai/i.test(orig || "")) {
     out = out.replace(/开放人工智能/g, "OpenAI");
+  }
+  if (/unusual whales/i.test(orig || "")) {
+    out = out
+      .replace(/异常大鲸鱼/g, "Unusual Whales")
+      .replace(/异常鲸鱼/g, "Unusual Whales")
+      .replace(/不寻常的鲸鱼/g, "Unusual Whales")
+      .replace(/不寻常鲸鱼/g, "Unusual Whales")
+      .replace(/非同寻常的鲸鱼/g, "Unusual Whales")
+      .replace(/异常的鲸鱼/g, "Unusual Whales");
+  }
+  if (/cheddarflow/i.test(orig || "")) {
+    out = out
+      .replace(/切达流/g, "Cheddarflow")
+      .replace(/切达福洛/g, "Cheddarflow")
+      .replace(/奶酪流/g, "Cheddarflow")
+      .replace(/车打流/g, "Cheddarflow");
   }
   return out;
 }
