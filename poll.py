@@ -90,7 +90,7 @@ async def main():
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=20) as resp:
+    with urllib.request.urlopen(req, timeout=120) as resp:
         print("worker:", resp.status, resp.read().decode()[:500])
 
 
