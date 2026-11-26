@@ -47,6 +47,14 @@ Bark keys (22-char, iPhone + iPad) live in the delivery Worker, never here.
   TRIM LOSSES guard as tg-firstsquawk-translate).
 - `.github/workflows/keepalive.yml` — weekly empty commit so the repo
   is never 60 days inactive.
+- `fetch_one.py` + `.github/workflows/fetch-one.yml` — one-off read of
+  any single tweet by ID, for when the cloud browser is 403-blocked
+  on x.com (persistent since 2026-11-21). Put `{"tweet_id": "..."}` in
+  `fetch_request.json`, push it, dispatch `fetch-one.yml`; the run log
+  prints the tweet JSON between FETCH_ONE_BEGIN / FETCH_ONE_END
+  (text, author, created_at, counts, media + video mp4 stream URLs).
+  Same spare-account X_AUTH_TOKEN / X_CT0 secrets as poll.py. First
+  verified run 45782955489 (2026-11-26).
 
 ## Latency budget (expected)
 
