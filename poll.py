@@ -109,11 +109,19 @@ async def fetch_latest(client, user_id):
     tweets = await client.get_user_tweets(user_id, "Tweets")
     out = []
     for t in list(tweets)[:MAX_PER_HANDLE]:
+        # Retweets are NOT new posts: get_user_tweets("Tweets") returns
+        # them with a fresh id + created_at (the retweet time) but the
+        # original's text. Pushing one re-sends content already delivered
+        # (2026-11-26: Cheddarflow retweeted its own 7:21am $SPY post at
+        # 9:31am; the retweet id decoded to 9:31am and went out as if it
+        # were a new post). Skip them; the original was already pushed.
+        is_retweet = getattr(t, "retweeted_tweet", None) is not None
         out.append({
             "id": str(t.id),
             "text": t.text,
             "created_at": str(getattr(t, "created_at", "")),
             "url": f"https://x.com/i/status/{t.id}",
+            "is_retweet": is_retweet,
         })
     # oldest first so the Worker pushes in chronological order
     return list(reversed(out))
@@ -139,12 +147,16 @@ async def main():
             print(f"fetch failed for {h['label']}: {e!r}")
             continue
         for it in items:
+            if it.get("is_retweet"):
+                print(f"skipped retweet {h['label']} {it['id']}: retweet of an earlier post")
+                continue
             if is_stale(it.get("created_at", "")):
                 print(f"skipped stale {h['label']} {it['id']}: created_at={it.get('created_at', '')!r}")
                 continue
             if is_promo(it.get("text", "")):
                 print(f"skipped promo {h['label']} {it['id']}: {it.get('text', '')[:80]!r}")
                 continue
+            it.pop("is_retweet", None)
             payload["tweets"].append({**it, "source": h["label"]})
 
     if not payload["tweets"]:
