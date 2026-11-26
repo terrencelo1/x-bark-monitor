@@ -1,0 +1,25 @@
+name: fetch-one
+
+# One-off fetch of a single tweet by ID, bypassing the cloud-browser
+# 403 on x.com. Dispatch-only; the tweet to fetch lives in
+# fetch_request.json at the repo root (upload it first, then dispatch).
+# Prints the tweet JSON between FETCH_ONE_BEGIN / FETCH_ONE_END in the
+# run log. No Bark push, no Worker call, no state.
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-one:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python fetch_one.py
+        env:
+          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
+          X_CT0: ${{ secrets.X_CT0 }}
