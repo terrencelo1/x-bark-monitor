@@ -1,7 +1,7 @@
 """Poller for x-bark-monitor (scheme 2).
 
-Fetches the latest tweets for Unusual Whales + Cheddarflow via twifork
-and POSTs candidates to the translate+Bark Worker. The Worker owns dedupe
+Fetches the latest tweets for Unusual Whales + Cheddarflow + Walter Bloomberg
+via twifork and POSTs candidates to the translate+Bark Worker. The Worker owns dedupe
 (KV, only writes on new posts), translation, and the Bark push — this
 script does NOT push Bark directly and does NOT store state locally,
 because every Actions run is a fresh machine.
@@ -26,6 +26,10 @@ from datetime import datetime, timedelta, timezone
 HANDLES = [
     {"label": "Unusual Whales", "screen_name": "unusual_whales", "fallback_id": "1200616796295847936"},
     {"label": "Cheddarflow", "screen_name": "Cheddarflow", "fallback_id": "1004137473679679488"},
+    # Walter Bloomberg (@DeItaone, ~53 posts/day) added 2026-11-27.
+    # No fallback_id yet: resolve live each run; fill it in from the
+    # "resolved DeItaone -> <id>" log line once a run succeeds.
+    {"label": "Walter Bloomberg", "screen_name": "DeItaone", "fallback_id": None},
 ]
 
 MAX_PER_HANDLE = 10
@@ -101,8 +105,12 @@ async def resolve_user_id(client, handle):
         print(f"resolved {handle['screen_name']} -> {uid}")
         return uid
     except Exception as e:  # noqa: BLE001 — fall back to the verified ID
-        print(f"resolve failed for {handle['screen_name']}: {e!r}; using fallback {handle['fallback_id']}")
-        return handle["fallback_id"]
+        fb = handle.get("fallback_id")
+        if fb:
+            print(f"resolve failed for {handle['screen_name']}: {e!r}; using fallback {fb}")
+            return fb
+        print(f"resolve failed for {handle['screen_name']}: {e!r}; no fallback, skipping handle")
+        return None
 
 
 async def fetch_latest(client, user_id):
@@ -142,6 +150,8 @@ async def main():
     for h in HANDLES:
         try:
             user_id = await resolve_user_id(client, h)
+            if not user_id:
+                continue
             items = await fetch_latest(client, user_id)
         except Exception as e:  # noqa: BLE001 — one handle failing must not kill the other
             print(f"fetch failed for {h['label']}: {e!r}")
