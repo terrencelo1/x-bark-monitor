@@ -523,10 +523,9 @@ export default {
       const kv = env.STATE;
       const out = {};
       if (kv) {
-        for (const s of ["Unusual Whales", "Cheddarflow"]) {
+        for (const s of ["Unusual Whales", "Cheddarflow", "Walter Bloomberg"]) {
           out[`last:${s}`] = await kv.get(`last:${s}`);
         }
-        out.lastPollAt = await kv.get("lastPollAt");
       }
       return new Response(JSON.stringify({ ok: true, ...out }, null, 2), {
         status: 200, headers: { "Content-Type": "application/json" },
@@ -565,9 +564,6 @@ export default {
       try { payload = await request.json(); } catch { return new Response("bad json", { status: 400 }); }
       const tweets = Array.isArray(payload && payload.tweets) ? payload.tweets : [];
       const kv = env.STATE;
-      if (kv) {
-        try { await kv.put("lastPollAt", new Date().toISOString()); } catch (e) { console.log("kv lastPollAt failed:", String(e)); }
-      }
       const results = [];
       for (const t of tweets) {
         const id = String(t.id || "");
