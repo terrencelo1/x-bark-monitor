@@ -27,9 +27,8 @@ HANDLES = [
     {"label": "Unusual Whales", "screen_name": "unusual_whales", "fallback_id": "1200616796295847936"},
     {"label": "Cheddarflow", "screen_name": "Cheddarflow", "fallback_id": "1004137473679679488"},
     # Walter Bloomberg (@DeItaone, ~53 posts/day) added 2026-11-27.
-    # No fallback_id yet: resolve live each run; fill it in from the
-    # "resolved DeItaone -> <id>" log line once a run succeeds.
-    {"label": "Walter Bloomberg", "screen_name": "DeItaone", "fallback_id": None},
+    # User ID resolved live 2026-11-27: 2704294333.
+    {"label": "Walter Bloomberg", "screen_name": "DeItaone", "fallback_id": "2704294333"},
 ]
 
 MAX_PER_HANDLE = 10
